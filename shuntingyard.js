@@ -93,6 +93,9 @@ function parse(input) {
 
     let tokens = tokenize(input);
 
+    if (tokens == "ERROR") // somethig went wrong in tokenization
+        return tokens;
+
     // start of shunting yard
     tokens.forEach(token => {
         switch (token.type) {
