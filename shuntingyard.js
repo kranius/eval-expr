@@ -132,6 +132,7 @@ function parse(input) {
                             output_queue.push(op);
                     }
                     if (parenthesis_match == false) {
+                        // TODO throw exception
                         console.error('missing (');
                         return;
                     }
@@ -207,13 +208,4 @@ function calculette(input) {
     let result = evaluateRpn(rpn);
 
     return result;
-}
-
-function compute() {
-    let expr = document.getElementById("expression").value;
-    let result = calculette(expr);
-
-    paragraph = document.createElement("p");
-    paragraph.innerHTML = expr + " = " + result;
-    document.getElementById("results").appendChild(paragraph);
 }
