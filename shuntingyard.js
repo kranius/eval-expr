@@ -16,7 +16,7 @@ const precedence = {
     "-": 2
 };
 
-const op_names = {
+const operators = {
     "(": "PARENTHESIS_OPEN",
     ")": "PARENTHESIS_CLOSE",
     "+": "OPERATOR_ADD",
@@ -26,17 +26,14 @@ const op_names = {
     "^": "OPERATOR_POW"
 }
 
+
 class Token {
-    constructor(type, value) {
-        this.type = type;
+    constructor(value, type, assoc, prec) {
         this.value = value;
+        this.type = type;
+        this.assoc = assoc;
+        this.prec = prec;
     }
-
-    precedence = () => { return precedence[this.value]; };
-
-    associativity = () => { return associativity[this.value]; };
-
-    name = () => { return names[this.value]; };
 }
 
 class AST {
@@ -48,12 +45,13 @@ class AST {
 }
 
 // we need a basic Stack.peek
-function peek(a) {
-    return a[a.length - 1];
+Array.prototype.peek = function () {
+    return this[this.length - 1];
 }
 
-function isWhitespace(str) {
-    return str === " " || str === "\n" || str === "\t";
+// and a convenience function
+String.prototype.isWhiteSpace = function() {
+    return this === " " || this === "\n" || this === "\t";
 }
 
 // cheap & dirty tokenizer
@@ -64,18 +62,18 @@ function tokenize(input) {
     // for now only support for literals, no variables/functions yet
     const flushBuffer = () => {
         if (0 < buffer.length) {
-            tokens.push(new Token("LITERAL", buffer));
+            tokens.push(new Token(buffer, "LITERAL", 42, 42));
             buffer = "";
         }
     }
 
     for (let i = 0; i < input.length; i++) {
         const symbol = input[i];
-        if (isWhitespace(symbol))
+        if (symbol.isWhiteSpace())
             continue;
-        else if (symbol in op_names) {
+        else if (symbol in operators) {
             flushBuffer();
-            tokens.push(new Token(op_names[symbol], symbol));
+            tokens.push(new Token(symbol, operators[symbol], associativity[symbol], precedence[symbol]));
         }
         else { // we have a literal (a variable or a function)
             buffer += symbol;
@@ -124,10 +122,10 @@ function parse(input) {
                     if (parenthesis_match == false) {
                         // TODO throw exception
                         console.error('missing (');
-                        return;
+                        return "ERROR";
                     }
-                    // our tokenizer doesnt understand functions yet though
-                    if (0 < operators_stack.length && peek(operators_stack).type == "FUNCTION") {
+                    // TODO implement functions support in tokenizer
+                    if (0 < operators_stack.length && operators_stack.peek().type == "FUNCTION") {
                         output_queue.push(operators_stack.pop());
                     }
                 }
@@ -136,11 +134,11 @@ function parse(input) {
                 {
                     const op1 = token;
                     while (0 < operators_stack.length) {
-                        const op2 = peek(operators_stack);
+                        const op2 = operators_stack.peek();
 
-                        if (op2 in op_names &&
-                            op1.associativity() == "left" && (op1.precedence() <= op2.precedence()) ||
-                            op1.associativity() == "right" && (op1.precedence() < op2.precedence())
+                        if (op2 in operators &&
+                            op1.associativity == "left" && (op1.precedence <= op2.precedence) ||
+                            op1.associativity == "right" && (op1.precedence < op2.precedence)
                         )
                             output_queue.push(operators_stack.pop());
                         else
@@ -159,7 +157,7 @@ function parse(input) {
         if (op.type === "PARENTHESIS_OPEN") {
             // TODO throw
             console.error("missing )");
-            return;
+            return "ERROR";
         }
         output_queue.push(op);
     }
@@ -187,7 +185,10 @@ function evaluateRpn(expr) {
                 stack.push(Math.pow(parseInt(b), parseInt(a)));
             else if (elem === "/") {
                 // TODO throw
-                console.error("cannot divide by zero !");
+                if (a == "0") {
+                    console.error("cannot divide by zero !");
+                    return "ERROR"
+                } else 
                 stack.push(parseInt(b) / parseInt(a));
             }
         }

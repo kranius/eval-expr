@@ -5,7 +5,7 @@ Tokenizer + "shunting yard" parser + RPN evaluator
 
 ## Supported operators :
 
-`+ - * / ^`
+`+ - * / ^ ( )`
 
 ## References:
 
