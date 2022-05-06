@@ -163,14 +163,16 @@ function parse(input) {
     });
 
     // pop remaining operators to the output queue
-    operators_stack.forEach(() => {
-        let top = peek(operators_stack);
-        if (typeof top !== "undefined" && top.type == "PARENTHESIS_OPEN") {
-            console.error("missmatched parenthesis !");
+    while (0 < operators_stack.length) {
+        const op = operators_stack.pop();
+
+        if (op.type === "PARENTHESIS_OPEN") {
+            // TODO throw
+            console.error("missing )");
             return;
         }
-        output_queue.push(operators_stack.pop());
-    });
+        output_queue.push(op);
+    }
 
     return output_queue.concat(operators_stack.reverse());
 }
@@ -192,6 +194,8 @@ function evaluateRpn(expr) {
             } else if (expr[i] === "*") {
                 stack.push(parseInt(a) * parseInt(b));
             } else if (expr[i] === "/") {
+                // TODO throw
+                console.error("cannot divide by zero !");
                 stack.push(parseInt(b) / parseInt(a));
             } else if (expr[i] === "^") {
                 stack.push(Math.pow(parseInt(b), parseInt(a)));

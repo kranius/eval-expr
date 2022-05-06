@@ -8,7 +8,6 @@ function compute() {
 }
 
 function reset() {
-    console.log("clearing...");
     document.getElementById("results").innerHTML = "";
     document.getElementById("expression").value = "";
 }
