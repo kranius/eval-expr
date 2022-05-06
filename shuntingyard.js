@@ -25,6 +25,19 @@ class Token {
     associativity = () => { return associativity[this.value]; };
 }
 
+class AST {
+    constructor(token, leftChildNode, rightChildNode) {
+        this.token = token.value;
+        this.leftChildNode = leftChildNode;
+        this.rightChildNode = rightChildNode;
+    }
+}
+
+// we need a basic Stack.peek
+function peek(a) {
+    return a[a.length - 1];
+}
+
 
 // cheap tokenizer
 // assumes valid expression
@@ -81,11 +94,6 @@ function tokenizeExpression(input) {
     return tokens;
 }
 
-// we need a basic Stack.peek
-function peek(a) {
-    return a[a.length - 1];
-}
-
 // here I implement shunting yard as per wikipedia
 // https://en.wikipedia.org/wiki/Shunting_yard_algorithm
 function parse(input) {
@@ -120,7 +128,7 @@ function parse(input) {
                     }
                     // remove matching '('
                     operators_stack.pop();
-                    if (operators_stack.at(-1).type == "FUNCTION")
+                    if (peek(operators_stack).type == "FUNCTION")
                         output_queue.push(operators_stack.pop());
                 }
                 break;
@@ -148,14 +156,6 @@ function parse(input) {
     });
 
     return output_queue.concat(operators_stack.reverse());
-}
-
-class AST {
-    constructor(token, leftChildNode, rightChildNode) {
-        this.token = token.value;
-        this.leftChildNode = leftChildNode;
-        this.rightChildNode = rightChildNode;
-    }
 }
 
 function evaluateRpn(expr) {
@@ -188,4 +188,17 @@ function calculette(input) {
     let rpn = parse(input);
     let result = evaluateRpn(rpn.map(e => e.value));
     console.log(result);
+
+    return result;
+}
+
+function compute() {
+    let expr = document.getElementById("expression").value;
+    console.log(expr);
+
+    let result = calculette(expr);
+    console.log(result);
+    paragraph = document.createElement("p");
+    paragraph.innerHTML = expr + " = " + result;
+    document.getElementById("results").appendChild(paragraph);
 }
