@@ -1,3 +1,8 @@
 # classic math expression evaluator
 
-tokenizer + shunting yard parser + rpn evaluator
+
+Tokenizer + "shunting yard" parser + RPN evaluator
+
+
+## References
+![shunting yard algo wikipedia](https://en.wikipedia.org/wiki/Shunting_yard_algorithm)
