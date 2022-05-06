@@ -1,3 +1,7 @@
+// https://en.wikipedia.org/wiki/Shunting_yard_algorithm
+
+const operators = ["+", "-", "*", "/"];
+
 const associativity = {
     "^": "right",
     "*": "left",
@@ -38,9 +42,7 @@ function peek(a) {
     return a[a.length - 1];
 }
 
-
-// cheap tokenizer
-// assumes valid expression
+// cheap & dirty tokenizer
 function tokenize(input) {
     let tokens = [];
     let literalBuffer = "";
@@ -95,7 +97,6 @@ function tokenize(input) {
 }
 
 // here I implement shunting yard as per wikipedia
-// https://en.wikipedia.org/wiki/Shunting_yard_algorithm
 function parse(input) {
     let operators_stack = [];
     let output_queue = [];
@@ -118,30 +119,42 @@ function parse(input) {
                 break;
             case "PARENTHESIS_CLOSE":
                 {
-                    while (peek(operators_stack).type != "PARENTHESIS_OPEN") {
-                        if (operators_stack.length == 0) {
-                            console.error("missing symbol : (");
-                            return;
-                        } else {
-                            output_queue.push(operators_stack.pop())
+                    let parenthesis_match = false;
+
+                    while (0 < operators_stack.length) {
+                        const op = operators_stack.pop();
+
+                        if (op.type == "PARENTHESIS_OPEN") {
+                            parenthesis_match = true;
+                            break;
                         }
+                        else
+                            output_queue.push(op);
                     }
-                    // remove matching '('
-                    operators_stack.pop();
-                    let top = peek(operators_stack);
-                    if (typeof top !== "undefined" && top.type == "FUNCTION")
+                    if (parenthesis_match == false) {
+                        console.error('missing (');
+                        return;
+                    }
+                    if (0 < operators_stack.length && peek(operators_stack).type == "FUNCTION") {
                         output_queue.push(operators_stack.pop());
+                    }
                 }
                 break;
             default: // it'a an operator
                 {
-                    console.log("Found operator : " + token.value);
-                    let top = peek(operators_stack);
-                    //console.log("top : " + top.value);
-                    while (typeof top !== "undefined" && top.type != "PARENTHESIS_OPEN" && (token.precedence() < top.precedence() || (token.precedence() == top.precedence()) && token.associativity() == "left")) {
-                        output_queue.push(operators_stack.pop());
+                    const op1 = token;
+                    while (0 < operators_stack.length) {
+                        const op2 = peek(operators_stack);
+
+                        if (op2 in operators &&
+                            op1.associativity() == "left" && (op1.precedence() <= op2.precedence()) ||
+                            op1.associativity() == "right" && (op1.precedence() < op2.precedence())
+                        )
+                            output_queue.push(operators_stack.pop());
+                        else
+                            break;
                     }
-                    operators_stack.push(token);
+                    operators_stack.push(op1);
                 }
                 break;
         }
@@ -189,8 +202,9 @@ function evaluateRpn(expr) {
 }
 
 function calculette(input) {
-    let rpn = parse(input);
-    let result = evaluateRpn(rpn.map(e => e.value));
+    let tokens = parse(input); // Token[]
+    let rpn = tokens.map(e => e.value); 
+    let result = evaluateRpn(rpn);
 
     return result;
 }
