@@ -18,6 +18,16 @@ const precedence = {
     "-": 2
 };
 
+const names = {
+    "(": "PARENTHESIS_OPEN",
+    ")": "PARENTHESIS_CLOSE",
+    "+": "OPERATOR_ADD",
+    "-": "OPERATOR_SUB",
+    "*": "OPERATOR_MUL",
+    "/": "OPERATOR_DIV",
+    "^": "OPERATOR_POW"
+}
+
 class Token {
     constructor(type, value) {
         this.type = type;
@@ -45,18 +55,18 @@ function peek(a) {
 // cheap & dirty tokenizer
 function tokenize(input) {
     let tokens = [];
-    let literalBuffer = "";
+    let buffer = "";
 
     const flushLiteral = () => {
-        if (literalBuffer.length > 0) {
-            tokens.push(new Token("LITERAL", literalBuffer));
-            literalBuffer = "";
+        if (buffer.length > 0) {
+            tokens.push(new Token("LITERAL", buffer));
+            buffer = "";
         }
     }
 
     for (let i = 0; i < input.length; i++) {
         if (input[i] == ' ' || input[i] == '\n' || input[i] == '\t')
-            break;
+            continue;
         switch (input[i]) {
             case '(':
                 flushLiteral();
@@ -86,7 +96,7 @@ function tokenize(input) {
                 flushLiteral();
                 tokens.push(new Token("OPERATOR_POW", "^"));
             default:
-                literalBuffer += input[i];
+                buffer += input[i];
                 if (i == input.length - 1)
                     flushLiteral();
                 break;
