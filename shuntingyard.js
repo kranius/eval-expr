@@ -1,7 +1,5 @@
 // https://en.wikipedia.org/wiki/Shunting_yard_algorithm
 
-const operators = ["+", "-", "*", "/"];
-
 const associativity = {
     "^": "right",
     "*": "left",
@@ -18,7 +16,7 @@ const precedence = {
     "-": 2
 };
 
-const names = {
+const op_names = {
     "(": "PARENTHESIS_OPEN",
     ")": "PARENTHESIS_CLOSE",
     "+": "OPERATOR_ADD",
@@ -37,6 +35,8 @@ class Token {
     precedence = () => { return precedence[this.value]; };
 
     associativity = () => { return associativity[this.value]; };
+
+    name = () => { return names[this.value]; };
 }
 
 class AST {
@@ -52,54 +52,36 @@ function peek(a) {
     return a[a.length - 1];
 }
 
+function isWhitespace(str) {
+    return str === " " || str === "\n" || str === "\t";
+}
+
 // cheap & dirty tokenizer
 function tokenize(input) {
     let tokens = [];
     let buffer = "";
 
-    const flushLiteral = () => {
-        if (buffer.length > 0) {
+    // for now only support for literals, no variables/functions yet
+    const flushBuffer = () => {
+        if (0 < buffer.length) {
             tokens.push(new Token("LITERAL", buffer));
             buffer = "";
         }
     }
 
     for (let i = 0; i < input.length; i++) {
-        if (input[i] == ' ' || input[i] == '\n' || input[i] == '\t')
+        const symbol = input[i];
+        if (isWhitespace(symbol))
             continue;
-        switch (input[i]) {
-            case '(':
-                flushLiteral();
-                tokens.push(new Token("PARENTHESIS_OPEN", "("));
-                break;
-            case ')':
-                flushLiteral();
-                tokens.push(new Token("PARENTHESIS_CLOSE", ")"));
-                break;
-            case '+':
-                flushLiteral();
-                tokens.push(new Token("OPERATOR_ADD", "+"));
-                break;
-            case '-':
-                flushLiteral();
-                tokens.push(new Token("OPERATOR_SUB", "-"));
-                break;
-            case '*':
-                flushLiteral();
-                tokens.push(new Token("OPERATOR_MUL", "*"));
-                break;
-            case '/':
-                flushLiteral();
-                tokens.push(new Token("OPERATOR_DIV", "/"));
-                break;
-            case '^':
-                flushLiteral();
-                tokens.push(new Token("OPERATOR_POW", "^"));
-            default:
-                buffer += input[i];
-                if (i == input.length - 1)
-                    flushLiteral();
-                break;
+        else if (symbol in op_names) {
+            flushBuffer();
+            tokens.push(new Token(op_names[symbol], symbol));
+        }
+        else { // we have a literal (a variable or a function)
+            buffer += symbol;
+            if (i == input.length - 1) { // if we are at last symbol
+                flushBuffer();
+            }
         }
     }
 
@@ -112,8 +94,6 @@ function parse(input) {
     let output_queue = [];
 
     let tokens = tokenize(input);
-
-    let i = 0;
 
     // start of shunting yard
     tokens.forEach(token => {
@@ -146,18 +126,19 @@ function parse(input) {
                         console.error('missing (');
                         return;
                     }
+                    // our tokenizer doesnt understand functions yet though
                     if (0 < operators_stack.length && peek(operators_stack).type == "FUNCTION") {
                         output_queue.push(operators_stack.pop());
                     }
                 }
                 break;
-            default: // it'a an operator
+            default: // it's an operator
                 {
                     const op1 = token;
                     while (0 < operators_stack.length) {
                         const op2 = peek(operators_stack);
 
-                        if (op2 in operators &&
+                        if (op2 in op_names &&
                             op1.associativity() == "left" && (op1.precedence() <= op2.precedence()) ||
                             op1.associativity() == "right" && (op1.precedence() < op2.precedence())
                         )
@@ -169,7 +150,6 @@ function parse(input) {
                 }
                 break;
         }
-        i++;
     });
 
     // pop remaining operators to the output queue
@@ -191,34 +171,34 @@ function parse(input) {
 function evaluateRpn(expr) {
     let stack = [];
 
-    for (let i = 0; i < expr.length; i++) {
-        if (!isNaN(expr[i]) && isFinite(expr[i])) {
-            stack.push(expr[i]);
+    expr.forEach(elem => {
+        if (!isNaN(elem) && isFinite(elem)) {
+            stack.push(elem);
         } else {
             let a = stack.pop();
             let b = stack.pop();
-            if (expr[i] === "+") {
+            if (elem === "+")
                 stack.push(parseInt(a) + parseInt(b));
-            } else if (expr[i] === "-") {
+            else if (elem === "-")
                 stack.push(parseInt(b) - parseInt(a));
-            } else if (expr[i] === "*") {
+            else if (elem === "*")
                 stack.push(parseInt(a) * parseInt(b));
-            } else if (expr[i] === "/") {
+            else if (elem === "^")
+                stack.push(Math.pow(parseInt(b), parseInt(a)));
+            else if (elem === "/") {
                 // TODO throw
                 console.error("cannot divide by zero !");
                 stack.push(parseInt(b) / parseInt(a));
-            } else if (expr[i] === "^") {
-                stack.push(Math.pow(parseInt(b), parseInt(a)));
             }
         }
-    }
+    });
 
     return stack.length > 1 ? "ERROR" : stack[0];
 }
 
 function calculette(input) {
     let tokens = parse(input); // Token[]
-    let rpn = tokens.map(e => e.value); 
+    let rpn = tokens.map(e => e.value); // we just want the values to feed to our evaluator
     let result = evaluateRpn(rpn);
 
     return result;
