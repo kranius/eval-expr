@@ -26,10 +26,10 @@ class Token {
 }
 
 class AST {
-    constructor(token, leftChildNode, rightChildNode) {
+    constructor(token, left, right) {
         this.token = token.value;
-        this.leftChildNode = leftChildNode;
-        this.rightChildNode = rightChildNode;
+        this.left = left;
+        this.right = right;
     }
 }
 
@@ -41,7 +41,7 @@ function peek(a) {
 
 // cheap tokenizer
 // assumes valid expression
-function tokenizeExpression(input) {
+function tokenize(input) {
     let tokens = [];
     let literalBuffer = "";
 
@@ -100,7 +100,7 @@ function parse(input) {
     let operators_stack = [];
     let output_queue = [];
 
-    let tokens = tokenizeExpression(input);
+    let tokens = tokenize(input);
 
     let i = 0;
 
@@ -128,13 +128,16 @@ function parse(input) {
                     }
                     // remove matching '('
                     operators_stack.pop();
-                    if (peek(operators_stack).type == "FUNCTION")
+                    let top = peek(operators_stack);
+                    if (typeof top !== "undefined" && top.type == "FUNCTION")
                         output_queue.push(operators_stack.pop());
                 }
                 break;
             default: // it'a an operator
                 {
-                    let top = operators_stack.at(-1);
+                    console.log("Found operator : " + token.value);
+                    let top = peek(operators_stack);
+                    //console.log("top : " + top.value);
                     while (typeof top !== "undefined" && top.type != "PARENTHESIS_OPEN" && (token.precedence() < top.precedence() || (token.precedence() == top.precedence()) && token.associativity() == "left")) {
                         output_queue.push(operators_stack.pop());
                     }
@@ -158,6 +161,7 @@ function parse(input) {
     return output_queue.concat(operators_stack.reverse());
 }
 
+// possible to do the eval directly in shunting yard function
 function evaluateRpn(expr) {
     let stack = [];
 
@@ -187,17 +191,14 @@ function evaluateRpn(expr) {
 function calculette(input) {
     let rpn = parse(input);
     let result = evaluateRpn(rpn.map(e => e.value));
-    console.log(result);
 
     return result;
 }
 
 function compute() {
     let expr = document.getElementById("expression").value;
-    console.log(expr);
-
     let result = calculette(expr);
-    console.log(result);
+
     paragraph = document.createElement("p");
     paragraph.innerHTML = expr + " = " + result;
     document.getElementById("results").appendChild(paragraph);
