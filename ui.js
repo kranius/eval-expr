@@ -11,3 +11,7 @@ function reset() {
     document.getElementById("results").innerHTML = "";
     document.getElementById("expression").value = "";
 }
+
+document.getElementById("calc").addEventListener("click", compute);
+
+document.getElementById("reset").addEventListener("click", reset);
